@@ -33,14 +33,6 @@ public:
         : value_(new (&data_[0]) T(std::move(value))), is_initialized_(true) {
     }
 
-    /*Optional(const Optional& other)
-        : value_(new (&data_[0]) T(other.Value())), is_initialized_(true) {
-    }*/
-
-    /*Optional(Optional&& other)
-        : value_(new (&data_[0]) T(std::move(other.Value()))), is_initialized_(true) {
-    }*/
-
     Optional(const Optional<T>& other);
 
     Optional(Optional<T>&& other) noexcept;
