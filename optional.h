@@ -25,11 +25,11 @@ private:
 public:
     Optional() = default;
 
-    Optional(const T& value) 
+    Optional(const T& value)
         : value_(new (&data_[0]) T(value)), is_initialized_(true) {
     }
 
-    Optional(T&& value) 
+    Optional(T&& value)
         : value_(new (&data_[0]) T(std::move(value))), is_initialized_(true) {
     }
 
@@ -50,7 +50,7 @@ public:
     Optional& operator=(T&& rhs) {
         if (is_initialized_) {
             *value_ = std::move(rhs);
-        } 
+        }
         else {
             value_ = new (&data_[0]) T(std::move(rhs));
             is_initialized_ = true;
@@ -95,6 +95,20 @@ public:
 
     bool HasValue() const {
         return is_initialized_;
+    }
+
+    template <typename... Mode>
+    void Emplace(Mode&&...mode) {
+        if constexpr (sizeof...(mode) == 0) {
+            return;
+        }
+
+        if (is_initialized_) {
+            CheckedDelete();
+        }
+
+        value_ = new (&data_[0]) T(std::forward<Mode>(mode)...);
+        is_initialized_ = true;
     }
 
     // Операторы * и -> не должны делать никаких проверок на пустоту Optional.
@@ -147,7 +161,7 @@ private:
         return is_initialized_;
     }
 
-    bool CheckValueType(const Optional& other ) {
+    bool CheckValueType(const Optional& other) {
         return std::is_same<decltype(Value()), decltype(other.Value())>::value;
     }
 
@@ -158,14 +172,14 @@ private:
     void CheckedDelete() {
         if (is_initialized_) {
             value_->~T();
-            
+
         }
         is_initialized_ = false;
     }
 };
 
 template <typename T>
-bool operator==(const Optional<T>& lhs, const Optional<T>& rhs){
+bool operator==(const Optional<T>& lhs, const Optional<T>& rhs) {
     return lhs.HasValue() == rhs.HasValue()
         && lhs.Value() == rhs.Value();
 }
@@ -190,3 +204,11 @@ Optional<T>::Optional(Optional<T>&& other) noexcept {
         value_ = new (&data_[0])  T(std::move(other.Value()));
     }
 }
+
+//template <typename T, typename... Mode>
+//void Optional<T>::Emplace() {
+//    if constexpr (sizeof...(mode) == 0) {
+//        return;
+//    }
+//
+//}
