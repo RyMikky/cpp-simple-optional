@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <utility>
 #include <type_traits>
+#include <vector>
 
 // Исключение этого типа должно генерироватся при обращении к пустому optional
 class BadOptionalAccess : public std::exception {
@@ -28,13 +29,10 @@ public:
     Optional(const T& value)
         : value_(new (&data_[0]) T(value)), is_initialized_(true) {
     }
-
     Optional(T&& value)
         : value_(new (&data_[0]) T(std::move(value))), is_initialized_(true) {
     }
-
     Optional(const Optional<T>& other);
-
     Optional(Optional<T>&& other) noexcept;
 
     Optional& operator=(const T& value) {
@@ -113,12 +111,16 @@ public:
 
     // Операторы * и -> не должны делать никаких проверок на пустоту Optional.
     // Эти проверки остаются на совести программиста
-    T& operator*() {
+    T& operator*() & {
         return *value_;
     }
-    const T& operator*() const {
+    const T& operator*() const & {
         return *value_;
     }
+    T&& operator*() && {
+        return std::move(*value_) ;
+    }
+
     T* operator->() {
         return value_;
     }
@@ -126,19 +128,26 @@ public:
         return value_;
     }
 
+
     // Метод Value() генерирует исключение BadOptionalAccess, если Optional пуст
-    T& Value() {
+    T& Value() & {
+        if (!is_initialized_) {
+            throw BadOptionalAccess();
+        }
+        return *value_;
+    }
+    const T& Value() const & {
         if (!is_initialized_) {
             throw BadOptionalAccess();
         }
         return *value_;
     }
 
-    const T& Value() const {
+    [[nodiscard]] T&& Value() && {
         if (!is_initialized_) {
             throw BadOptionalAccess();
         }
-        return *value_;
+        return std::move(*value_);
     }
 
     void Reset() {
@@ -204,11 +213,3 @@ Optional<T>::Optional(Optional<T>&& other) noexcept {
         value_ = new (&data_[0])  T(std::move(other.Value()));
     }
 }
-
-//template <typename T, typename... Mode>
-//void Optional<T>::Emplace() {
-//    if constexpr (sizeof...(mode) == 0) {
-//        return;
-//    }
-//
-//}
